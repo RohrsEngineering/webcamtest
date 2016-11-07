@@ -10,11 +10,11 @@ window.onload = function() {
 		btnStart = document.getElementById("btnStart"),
 		btnStop = document.getElementById("btnStop"),
 		btnPhoto = document.getElementById("btnPhoto"),
+		streaming = false,
 		videoObj = {
 				video: true,
 				audio: false
 		};
-	var streaming = false;
 	btnStart.addEventListener("click", function() {
 		var localMediaStream;
 		if (navigator.getUserMedia) {
