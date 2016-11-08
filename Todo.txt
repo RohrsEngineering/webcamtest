@@ -1,8 +1,12 @@
-1. Analyze image
--method 1: select center row and analyze
--method 2: select brightest row and analyze
-2. Display image on page
+1. Fix start and stop video
+2. Only take picture when video is rolling
 
-3. Create tag specific page
-4. Add Users
-5. Add Authentication
+3. Finish "scan"
+  1. Analyze image
+    -method 1: select center row and analyze
+    -method 2: select brightest row and analyze
+  2. Display image on page
+
+4. Create tag specific page
+5. Add Users
+6. Add Authentication
