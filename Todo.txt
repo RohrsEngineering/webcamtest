@@ -1,0 +1,8 @@
+1. Analyze image
+-method 1: select center row and analyze
+-method 2: select brightest row and analyze
+2. Display image on page
+
+3. Create tag specific page
+4. Add Users
+5. Add Authentication
