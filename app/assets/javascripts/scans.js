@@ -32,25 +32,62 @@ $(function() {
 	$( "#btnStart" ).click( function() {
 		if (navigator.getUserMedia) {
 			navigator.getUserMedia(constraints, successCallback, errorCallback);
-
+			console.log('start navigator.getUserMedia');
 			$("#btnStop").click( function() {
 					stream.getVideoTracks()[0].stop();
+					console.log('stop navigator.getUserMedia');
 			});
 
 			$("#btnPhoto").click( function() {
 				snapPhoto();
+				
 				//context.drawImage(video, 0, 0, 320, 240);
 				console.log('Photo button press');
 			});
+		} else {
+			console.log('Error starting navigator.getUserMedia');
 		}
 	});
 	
 	function snapPhoto(img) {
 		if (context) { context.drawImage(video, 0, 0, 320, 240); }
+		img = context.getImageData(0, 0, video.width, video.height);
+		//ImageData.data  representing a one-dimensional array containing the data
+		//in the RGBA order, with integer values between 0 and 255
+		console.log(img);
+		console.log(img.data.length);
+		analyzePhoto(img);
 		$("#scan_data").val("Example Data");
 		$("#scan_number").val(12345);
-		img = context.getImageData(0, 0, video.width, video.height);
 		console.log("Photo Drawn");
+	}
+	
+	function analyzePhoto(img) {
+		var intensity= createArray(img.height, img.width);
+		var sumIntensity= new Array(img.height);
+		var k = 3;
+		for (var i = 0; i<img.height.length; i++) {
+			for (var j = 0; j<img.width; j++) {
+				intensity[i][j]=img.data[k];
+			}
+			sumIntensity[i]=intensity[i].reduce(add, 0);
+		}
+		console.log(intensity);
+		console.log(sumIntensity);
+	}
+
+	function add(a, b) {
+	    return a + b;
+	}
+	
+	function createArray(length) {
+    var arr = new Array(length || 0),
+        i = length;
+    if (arguments.length > 1) {
+        var args = Array.prototype.slice.call(arguments, 1);
+        while(i--) arr[length-1 - i] = createArray.apply(this, args);
+    }
+    return arr;
 	}
 	// ctx.font = "48px serif";
 	// if streaming {
