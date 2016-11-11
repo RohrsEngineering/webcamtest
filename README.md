@@ -1,7 +1,6 @@
-webcamtest
+# webcamtest
 
-
-Use getUserMedia to access camera through browser
-Obtain images and analyze the acquired spectrum
-Convert acquired spectrum to numeric/hex id
-Save id to db and create id info page
+- TODO: Use getUserMedia to access camera through browser
+- TODO: Obtain images and analyze the acquired spectrum
+- TODO: Convert acquired spectrum to numeric/hex id
+- TODO: Save id to db and create id info page
