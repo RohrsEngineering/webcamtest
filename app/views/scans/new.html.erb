@@ -3,17 +3,22 @@
     <div class="row">
       <h1>getUserMedia</h1>
     </div>
-    <article>
-      <video  id="video" width="320" height="200" autoplay></video>
+    <div id="video-form">
+      <video id="video" width="320" height="200" autoplay></video>
       <section>
         <button id="btnStart">Start video</button>
-        <button id="btnStop">Stop video</button>            
+        <button id="btnStop">Stop video</button>
         <button id="btnPhoto">Take a photo</button>
       </section>
       <canvas id="canvas" width="320" height="240"></canvas>
       <div class="row">
         <canvas id="hexnum" width="320" height="100"></canvas>
       </div>
-    </article>
+      <%= form_for @scan, url: { action: "create" } do |f| %>
+        <%= f.text_field :data, placeholder: "Data" %>
+        <%= f.text_field :number, placeholder: "Number" %>
+        <%= f.submit "Update Inventory" %>
+      <% end %>
+    </div>
   </div>
 </div>
