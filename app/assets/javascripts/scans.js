@@ -2,7 +2,7 @@ $(function() {
 	if ($("#canvas").length === 0) { return; }
 
 	//Compatibility
-	/*global navigator, $, stream*/
+	/*global navigator, $, stream, Image*/
 	navigator.getUserMedia = navigator.getUserMedia ||
 		navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 		
@@ -14,7 +14,6 @@ $(function() {
 				video: true,
 				audio: false
 		};
-	/*global stream*/
 	function successCallback(stream) {
 		window.stream = stream; // stream available to console
 		if (window.URL) {
@@ -40,26 +39,39 @@ $(function() {
 
 			$("#btnPhoto").click( function() {
 				snapPhoto();
-				
 				//context.drawImage(video, 0, 0, 320, 240);
 				console.log('Photo button press');
+			});
+			$("#btnTestPhoto").click( function() {
+				snapTestPhoto();
+				//context.drawImage(video, 0, 0, 320, 240);
+				console.log('Test photo button press');
 			});
 		} else {
 			console.log('Error starting navigator.getUserMedia');
 		}
 	});
 	
-	function snapPhoto(img) {
+	function snapPhoto() {
 		if (context) { context.drawImage(video, 0, 0, 320, 240); }
-		img = context.getImageData(0, 0, video.width, video.height);
+		var img = context.getImageData(0, 0, video.width, video.height);
 		//ImageData.data  representing a one-dimensional array containing the data
 		//in the RGBA order, with integer values between 0 and 255
 		console.log(img);
 		console.log(img.data.length);
 		analyzePhoto(img);
-		$("#scan_data").val("Example Data");
-		$("#scan_number").val(12345);
+
 		console.log("Photo Drawn");
+	}
+	
+	function snapTestPhoto() {
+		var testPhoto = new Image();
+    testPhoto.src = "https://s3-us-west-2.amazonaws.com/velocitylaboratories/blank-calibration-example.png";
+  	console.log(testPhoto);
+  	
+		if (context) { context.drawImage(testPhoto, 0, 0, 320, 240); }
+		var img = context.getImageData(0, 0, testPhoto.width, testPhoto.height);
+		analyzePhoto(img);
 	}
 	
 	function analyzePhoto(img) {
@@ -74,8 +86,13 @@ $(function() {
 		}
 		console.log(intensity);
 		console.log(sumIntensity);
+		updateImgDB(sumIntensity);
 	}
-
+	
+	function updateImgDB (sumIntensity) {
+		$("#scan_data").val("Example Data");
+		$("#scan_number").val(12345);
+	}
 	function add(a, b) {
 	    return a + b;
 	}
