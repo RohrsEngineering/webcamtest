@@ -29,6 +29,7 @@ var startRecording = function(video) {
 			video.src = navigator.webkitGetUserMedia ?
 				window.URL.createObjectURL(stream) : // If we got user media, use it
 				stream; // Otherwise keep stream as-is
+			window.stream = stream; // Expose the stream to the window for console access
 			setState({
 				stream: stream, // Set the new stream state to the new stream
 				streaming: true, // And set the streaming state to true
@@ -74,9 +75,45 @@ var takeSnapshot = function(context, video) {
 		return;
 	}
 	// If we have a canvas context we can write to, draw the image there
+	var image = context.getImageData(0, 0, video.width, video.height);
 	if (context) { context.drawImage(video, 0, 0, 320, 240); }
+
+	//ImageData.data  representing a one-dimensional array containing the data
+	//in the RGBA order, with integer values between 0 and 255
+	console.log(img);
+	console.log(img.data.length);
+	analyzePhoto(img);
+
 	// And finally, update the form data
 	updateForm("Example Data", 12345);
+};
+
+var createArray = function(length) {
+	var arr = new Array(length || 0),
+			i = length;
+	if (arguments.length > 1) {
+			var args = Array.prototype.slice.call(arguments, 1);
+			while(i--) arr[length-1 - i] = createArray.apply(this, args);
+	}
+	return arr;
+};
+
+var add = function(a, b) {
+	return a + b;
+};
+
+var analyzePhoto = function(img) {
+	var intensity = createArray(img.height, img.width);
+	var sumIntensity = new Array(img.height);
+	var k = 3;
+	for (var i = 0; i < img.height.length; i++) {
+		for (var j = 0; j < img.width; j++) {
+			intensity[i][j]=img.data[k];
+		}
+		sumIntensity[i]=intensity[i].reduce(add, 0);
+	}
+	console.log(intensity);
+	console.log(sumIntensity);
 };
 
 // Wrap our initialization logic inside of a document ready closure
@@ -85,7 +122,8 @@ $(function() {
 	if ($("#canvas").length === 0) { return; }
 
 	// Compatibility for multiple browsers
-	navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia;
+	navigator.getUserMedia = navigator.getUserMedia ||
+		navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 
 	// Set the canvas, video, and canvas context separately
 	var canvas  = document.getElementById("canvas");
