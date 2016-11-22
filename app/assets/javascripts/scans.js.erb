@@ -66,25 +66,37 @@ $(function() {
 	
 	function snapTestPhoto() {
 		var testPhoto = new Image();
-    testPhoto.src = "https://s3-us-west-2.amazonaws.com/velocitylaboratories/blank-calibration-example.png";
-  	console.log(testPhoto);
+    //testPhoto.src = "https://s3-us-west-2.amazonaws.com/velocitylaboratories/blank-calibration-example.png
+
+    testPhoto.src = '<%= asset_path "local-blank-calibration-image.png" %>';
   	
-		if (context) { context.drawImage(testPhoto, 0, 0, 320, 240); }
-		var img = context.getImageData(0, 0, testPhoto.width, testPhoto.height);
-		analyzePhoto(img);
+  	testPhoto.onload=function() {
+  		console.log(testPhoto);
+			if (context) { context.drawImage(testPhoto, 0, 0, 320, 240); }
+  	};
+		var imageData = context.getImageData(0, 0, testPhoto.width, testPhoto.height);
+		analyzePhoto(imageData);
 	}
 	
-	function analyzePhoto(img) {
-		var intensity= createArray(img.height, img.width);
-		var sumIntensity= new Array(img.height);
-		var k = 3;
-		for (var i = 0; i<img.height.length; i++) {
-			for (var j = 0; j<img.width; j++) {
-				intensity[i][j]=img.data[k];
-			}
-			sumIntensity[i]=intensity[i].reduce(add, 0);
+	function analyzePhoto(imageData) {
+		var sumIntensity= new Array(imageData.height);
+		var colors=("red", "green", "blue", "intensity");
+		var RGBA={};
+		for (var color in colors) {
+			RGBA[color]=createArray(imageData.height, imageData.width);
 		}
-		console.log(intensity);
+		var counter=0;
+		
+		for (var i = 0; i<imageData.height; i++) {
+			for (var j = 0; j<imageData.width; j++) {
+				for (var color in colors) {
+					RGBA[color][i][j]=imageData.data[counter];
+					counter++;
+				}
+			}
+			sumIntensity[i]=RGBA["intensity"][i].reduce(add, 0);
+		}
+		console.log(RGBA);
 		console.log(sumIntensity);
 		updateImgDB(sumIntensity);
 	}
