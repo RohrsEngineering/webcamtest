@@ -1,4 +1,4 @@
-/*global navigator,$*/
+/*global navigator,$,Image*/
 // Store the configuration values for the video stream
 var videoConfig = {
 	video: true,
@@ -60,13 +60,6 @@ var stopRecording = function() {
 		$("#btnStart").text("Start Video");
 };
 
-// A little helper function to make it easier to change the form
-// that will get sent to the backend
-var updateForm = function(data, number) {
-	$("#scan_data").val(data);
-	$("#scan_number").val(number);
-};
-
 // Separate the snapshot code into its own function which relies on the
 // canvas context (for storing the image) and the camera's video
 var takeSnapshot = function(context, video) {
@@ -76,26 +69,27 @@ var takeSnapshot = function(context, video) {
 		return;
 	}
 	// If we have a canvas context we can write to, draw the image there
-	var image = context.getImageData(0, 0, video.width, video.height);
+	var imageData = context.getImageData(0, 0, video.width, video.height);
 	if (context) { context.drawImage(video, 0, 0, 320, 240); }
 
 	//ImageData.data  representing a one-dimensional array containing the data
 	//in the RGBA order, with integer values between 0 and 255
-	console.log(image);
-	console.log(image.data.length);
-	analyzePhoto(image);
+	console.log(imageData);
+	console.log(imageData.data.length);
+	analyzePhoto(imageData);
 
 	// And finally, update the form data
 	updateForm("Example Data", 12345);
 };
 
-var takeTestSnapshot = function(context, video) { // Use to make downstream functions with a sample calibration image
-	//var testPhoto = new Image();
+// takeTestSnapshot used to make downstream functions with a sample calibration image
+var takeTestSnapshot = function(context, video) { 
+	var testPhoto = new Image();
 	//testPhoto.src = "https://s3-us-west-2.amazonaws.com/velocitylaboratories/blank-calibration-example.png";
-  video.src="https://s3-us-west-2.amazonaws.com/velocitylaboratories/blank-calibration-example.png";
+  testPhoto.src="https://s3-us-west-2.amazonaws.com/velocitylaboratories/blank-calibration-example.png";
 	//testPhoto.src = '<%= asset_path "local-blank-calibration-image.png" %>';
-	var image = context.getImageData(0, 0, video.width, video.height);
-	if (context) { context.drawImage(video, 0, 0, 320, 240); }
+	//var image = context.getImageData(0, 0, video.width, video.height);
+	if (context) { context.drawImage(testPhoto, 0, 0, 320, 240); }
 	/*testPhoto.onload=function() {
 		console.log(testPhoto);
 		if (context) { context.drawImage(testPhoto, 0, 0, 320, 240); }
@@ -105,6 +99,36 @@ var takeTestSnapshot = function(context, video) { // Use to make downstream func
 	analyzePhoto(imageData);
 };
 
+function analyzePhoto(imageData) { // Analyze image RGBA data
+	var sumIntensity= new Array(imageData.height),
+	 color, colors=["red", "green", "blue", "intensity"],
+	 RGBA = new Object();
+	console.log("length of colors= ",colors.length);
+	console.log("imageData.height= ",imageData.height);
+	console.log("imageData.width= ",imageData.width);
+	for (var i=0; i<colors.length; i++) {
+		RGBA[colors[i]]=createArray(imageData.height, imageData.width);
+		console.log("color= ", colors[i]);
+	}
+	var counter=0;
+	console.log("RGBA= ", RGBA);
+	console.log('RGBA["red"]= ', RGBA["red"]);
+	for (var i = 0; i<imageData.height; i++) {
+		for (var j = 0; j<imageData.width; j++) {
+			for (var color in colors) {
+				RGBA[color][i][j]=imageData.data[counter];
+				counter++;
+			}
+		}
+		console.log(RGBA);
+		sumIntensity[i]=RGBA["intensity"][i].reduce(add, 0);
+	}
+	console.log(sumIntensity);
+	updateForm("data", "number");
+}
+
+
+//-----------------------Helper Functions----------------------//
 var createArray = function(length) {
 	var arr = new Array(length || 0),
 			i = length;
@@ -119,29 +143,15 @@ var add = function(a, b) {
 	return a + b;
 };
 
-function analyzePhoto(imageData) { // Analyze image RGBA data
-	var sumIntensity= new Array(imageData.height);
-	var colors=("red", "green", "blue", "intensity");
-	var RGBA={};
-	for (var color in colors) {
-		RGBA[color]=createArray(imageData.height, imageData.width);
-	}
-	var counter=0;
-	
-	for (var i = 0; i<imageData.height; i++) {
-		for (var j = 0; j<imageData.width; j++) {
-			for (var color in colors) {
-				RGBA[color][i][j]=imageData.data[counter];
-				counter++;
-			}
-		}
-		sumIntensity[i]=RGBA["intensity"][i].reduce(add, 0);
-	}
-	console.log(RGBA);
-	console.log(sumIntensity);
-	updateForm("data", "number");
-}
-	
+// A little helper function to make it easier to change the form
+// that will get sent to the backend
+var updateForm = function(data, number) {
+	$("#scan_data").val(data);
+	$("#scan_number").val(number);
+};
+
+
+//-----------------------------------------------------------------//
 // Wrap our initialization logic inside of a document ready closure
 $(function() {
 	// If we don't have a canvas, don't try to go through all of this work
@@ -164,5 +174,9 @@ $(function() {
 	$("#btnPhoto").on('click', function() {
 		// Take a snapshot when btnPhoto is clicked
 		takeSnapshot(context, video);
+	});
+	$("#btnTestPhoto").on('click', function() {
+		// Take a snapshot when btnPhoto is clicked
+		takeTestSnapshot(context, video);
 	});
 });
