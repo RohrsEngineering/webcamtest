@@ -1,128 +1,168 @@
+/*global navigator,$*/
+// Store the configuration values for the video stream
+var videoConfig = {
+	video: true,
+	audio: false,
+};
+
+// And maintain some sort of script state
+var state = {
+	stream: null,
+	streaming: false,
+};
+
+// Try to limit modifying the state through this helper function
+// This will make the code significantly less error-prone
+var setState = function(newState) {
+	state = Object.assign({}, state, newState);
+};
+
+// Break each piece of functionality out into separate functions
+// This function only handles starting the recording from the user's
+// camera
+var startRecording = function(video) {
+	// If we cannot get the user's media, just exit out of this function
+	if (!navigator.getUserMedia) { return; }
+	navigator.getUserMedia(
+		videoConfig, // Referenced from the top of this file
+		function(stream) {
+			// Shorten the line to make it easier to read in the future
+			video.src = navigator.webkitGetUserMedia ?
+				window.URL.createObjectURL(stream) : // If we got user media, use it
+				stream; // Otherwise keep stream as-is
+			window.stream = stream; // Expose the stream to the window for console access
+			setState({
+				stream: stream, // Set the new stream state to the new stream
+				streaming: true, // And set the streaming state to true
+			});
+			$("#btnStart").text("Stop Video");
+		},
+		function(error) {
+			// Otherwise handle an error condition
+			console.error("Video capture error: ", error.code);
+		}
+	);
+};
+
+// Have a function to handle when we want to stop recording from the user's
+// camera
+var stopRecording = function() {
+	// Get each video track from the stream and iterate over them, calling a
+	// function on each video stream we find to stop it
+	state
+		.stream
+		.getVideoTracks()
+		.map(function(stream) {
+			stream.stop();
+		});
+	// And then make sure the app knows we've stopped streaming
+	setState({ streaming: false });
+		$("#btnStart").text("Start Video");
+};
+
+// A little helper function to make it easier to change the form
+// that will get sent to the backend
+var updateForm = function(data, number) {
+	$("#scan_data").val(data);
+	$("#scan_number").val(number);
+};
+
+// Separate the snapshot code into its own function which relies on the
+// canvas context (for storing the image) and the camera's video
+var takeSnapshot = function(context, video) {
+	// Don't allow snapshots if there is nothing to pull from
+	if (!state.streaming) {
+		console.log('You need to be recording via your camera to take a snapshot!');
+		return;
+	}
+	// If we have a canvas context we can write to, draw the image there
+	var image = context.getImageData(0, 0, video.width, video.height);
+	if (context) { context.drawImage(video, 0, 0, 320, 240); }
+
+	//ImageData.data  representing a one-dimensional array containing the data
+	//in the RGBA order, with integer values between 0 and 255
+	console.log(image);
+	console.log(image.data.length);
+	analyzePhoto(image);
+
+	// And finally, update the form data
+	updateForm("Example Data", 12345);
+};
+
+var takeTestSnapshot = function(context, video) { // Use to make downstream functions with a sample calibration image
+	//var testPhoto = new Image();
+	//testPhoto.src = "https://s3-us-west-2.amazonaws.com/velocitylaboratories/blank-calibration-example.png";
+  video.src="https://s3-us-west-2.amazonaws.com/velocitylaboratories/blank-calibration-example.png";
+	//testPhoto.src = '<%= asset_path "local-blank-calibration-image.png" %>';
+	var image = context.getImageData(0, 0, video.width, video.height);
+	if (context) { context.drawImage(video, 0, 0, 320, 240); }
+	/*testPhoto.onload=function() {
+		console.log(testPhoto);
+		if (context) { context.drawImage(testPhoto, 0, 0, 320, 240); }
+	};
+	*/
+	var imageData = context.getImageData(0, 0, video.width, video.height);
+	analyzePhoto(imageData);
+};
+
+var createArray = function(length) {
+	var arr = new Array(length || 0),
+			i = length;
+	if (arguments.length > 1) {
+			var args = Array.prototype.slice.call(arguments, 1);
+			while(i--) arr[length-1 - i] = createArray.apply(this, args);
+		}
+	return arr;
+};
+
+var add = function(a, b) {
+	return a + b;
+};
+
+function analyzePhoto(imageData) { // Analyze image RGBA data
+	var sumIntensity= new Array(imageData.height);
+	var colors=("red", "green", "blue", "intensity");
+	var RGBA={};
+	for (var color in colors) {
+		RGBA[color]=createArray(imageData.height, imageData.width);
+	}
+	var counter=0;
+	
+	for (var i = 0; i<imageData.height; i++) {
+		for (var j = 0; j<imageData.width; j++) {
+			for (var color in colors) {
+				RGBA[color][i][j]=imageData.data[counter];
+				counter++;
+			}
+		}
+		sumIntensity[i]=RGBA["intensity"][i].reduce(add, 0);
+	}
+	console.log(RGBA);
+	console.log(sumIntensity);
+	updateForm("data", "number");
+}
+	
+// Wrap our initialization logic inside of a document ready closure
 $(function() {
+	// If we don't have a canvas, don't try to go through all of this work
 	if ($("#canvas").length === 0) { return; }
 
-	//Compatibility
-	/*global navigator, $, stream, Image*/
+	// Compatibility for multiple browsers
 	navigator.getUserMedia = navigator.getUserMedia ||
 		navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-		
-	var canvas = document.getElementById("canvas"),
-		context = canvas.getContext("2d"),
-		video = document.querySelector('video'),
-		streaming = false,
-		constraints = {
-				video: true,
-				audio: false
-		};
-	function successCallback(stream) {
-		window.stream = stream; // stream available to console
-		if (window.URL) {
-    		video.src = window.URL.createObjectURL(stream);
-		} else {
-    		video.src = stream;
-		}
-		console.log('navigator.getUserMedia active');
-	}
 
-	function errorCallback(error) {
-	  console.log('navigator.getUserMedia error: ', error);
-	}
-	
-	$( "#btnStart" ).click( function() {
-		if (navigator.getUserMedia) {
-			navigator.getUserMedia(constraints, successCallback, errorCallback);
-			console.log('start navigator.getUserMedia');
-			$("#btnStop").click( function() {
-					stream.getVideoTracks()[0].stop();
-					console.log('stop navigator.getUserMedia');
-			});
+	// Set the canvas, video, and canvas context separately
+	var canvas  = document.getElementById("canvas");
+	var	video   = document.getElementById("video");
+	var context = canvas.getContext("2d");
 
-			$("#btnPhoto").click( function() {
-				snapPhoto();
-				//context.drawImage(video, 0, 0, 320, 240);
-				console.log('Photo button press');
-			});
-			$("#btnTestPhoto").click( function() {
-				snapTestPhoto();
-				//context.drawImage(video, 0, 0, 320, 240);
-				console.log('Test photo button press');
-			});
-		} else {
-			console.log('Error starting navigator.getUserMedia');
-		}
+	// Handle the on-click event via jQuery for the toggle start/stop button
+	$("#btnStart").on('click', function() {
+		// Start streaming if we're not, stop if we are
+		!state.streaming ? startRecording(video) : stopRecording();
 	});
-	
-	function snapPhoto() {
-		if (context) { context.drawImage(video, 0, 0, 320, 240); }
-		var img = context.getImageData(0, 0, video.width, video.height);
-		//ImageData.data  representing a one-dimensional array containing the data
-		//in the RGBA order, with integer values between 0 and 255
-		console.log(img);
-		console.log(img.data.length);
-		analyzePhoto(img);
-
-		console.log("Photo Drawn");
-	}
-	
-	function snapTestPhoto() { // Use to make downstream functions with a sample calibration image
-		var testPhoto = new Image();
-    testPhoto.src = "https://s3-us-west-2.amazonaws.com/velocitylaboratories/blank-calibration-example.png";
-
-    //testPhoto.src = '<%= asset_path "local-blank-calibration-image.png" %>';
-  	
-  	testPhoto.onload=function() {
-  		console.log(testPhoto);
-			if (context) { context.drawImage(testPhoto, 0, 0, 320, 240); }
-  	};
-		var imageData = context.getImageData(0, 0, testPhoto.width, testPhoto.height);
-		analyzePhoto(imageData);
-	}
-	
-	function analyzePhoto(imageData) { // Analyze image RGBA data
-		var sumIntensity= new Array(imageData.height);
-		var colors=("red", "green", "blue", "intensity");
-		var RGBA={};
-		for (var color in colors) {
-			RGBA[color]=createArray(imageData.height, imageData.width);
-		}
-		var counter=0;
-		
-		for (var i = 0; i<imageData.height; i++) {
-			for (var j = 0; j<imageData.width; j++) {
-				for (var color in colors) {
-					RGBA[color][i][j]=imageData.data[counter];
-					counter++;
-				}
-			}
-			sumIntensity[i]=RGBA["intensity"][i].reduce(add, 0);
-		}
-		console.log(RGBA);
-		console.log(sumIntensity);
-		updateImgDB(sumIntensity);
-	}
-	
-	function updateImgDB (sumIntensity) { // Add spectral data to DB
-		$("#scan_data").val("Example Data");
-		$("#scan_number").val(12345);
-	}
-	function add(a, b) {
-	    return a + b;
-	}
-	
-	function createArray(length) {
-    var arr = new Array(length || 0),
-        i = length;
-    if (arguments.length > 1) {
-        var args = Array.prototype.slice.call(arguments, 1);
-        while(i--) arr[length-1 - i] = createArray.apply(this, args);
-    }
-    return arr;
-	}
-	// ctx.font = "48px serif";
-	// if streaming {
-	// 	ctx.fillText("Hello world", 5, 50);
-	// }
-	// else {
-	// 	ctx.fillText("Not Streaming", 5, 50);
-	// }
+	$("#btnPhoto").on('click', function() {
+		// Take a snapshot when btnPhoto is clicked
+		takeSnapshot(context, video);
+	});
 });
