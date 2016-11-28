@@ -64,11 +64,11 @@ $(function() {
 		console.log("Photo Drawn");
 	}
 	
-	function snapTestPhoto() {
+	function snapTestPhoto() { // Use to make downstream functions with a sample calibration image
 		var testPhoto = new Image();
-    //testPhoto.src = "https://s3-us-west-2.amazonaws.com/velocitylaboratories/blank-calibration-example.png
+    testPhoto.src = "https://s3-us-west-2.amazonaws.com/velocitylaboratories/blank-calibration-example.png";
 
-    testPhoto.src = '<%= asset_path "local-blank-calibration-image.png" %>';
+    //testPhoto.src = '<%= asset_path "local-blank-calibration-image.png" %>';
   	
   	testPhoto.onload=function() {
   		console.log(testPhoto);
@@ -78,7 +78,7 @@ $(function() {
 		analyzePhoto(imageData);
 	}
 	
-	function analyzePhoto(imageData) {
+	function analyzePhoto(imageData) { // Analyze image RGBA data
 		var sumIntensity= new Array(imageData.height);
 		var colors=("red", "green", "blue", "intensity");
 		var RGBA={};
@@ -101,7 +101,7 @@ $(function() {
 		updateImgDB(sumIntensity);
 	}
 	
-	function updateImgDB (sumIntensity) {
+	function updateImgDB (sumIntensity) { // Add spectral data to DB
 		$("#scan_data").val("Example Data");
 		$("#scan_number").val(12345);
 	}
