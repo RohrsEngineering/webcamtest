@@ -69,9 +69,9 @@ var takeSnapshot = function(context, video) {
 		return;
 	}
 	// If we have a canvas context we can write to, draw the image there
-	var imageData = context.getImageData(0, 0, video.width, video.height);
+	
 	if (context) { context.drawImage(video, 0, 0, 320, 240); }
-
+	var imageData = context.getImageData(0, 0, video.width, video.height);
 	//ImageData.data  representing a one-dimensional array containing the data
 	//in the RGBA order, with integer values between 0 and 255
 	console.log(imageData);
@@ -85,17 +85,18 @@ var takeSnapshot = function(context, video) {
 // takeTestSnapshot used to make downstream functions with a sample calibration image
 var takeTestSnapshot = function(context, video) { 
 	var testPhoto = new Image();
-	//testPhoto.src = "https://s3-us-west-2.amazonaws.com/velocitylaboratories/blank-calibration-example.png";
-  testPhoto.src="https://s3-us-west-2.amazonaws.com/velocitylaboratories/blank-calibration-example.png";
-	//testPhoto.src = '<%= asset_path "local-blank-calibration-image.png" %>';
+  //testPhoto.src="https://s3-us-west-2.amazonaws.com/velocitylaboratories/blank-calibration-example.png";
+  testPhoto.onload = function() {
+		
+	};
+	testPhoto.src = '<%= asset_path "local-blank-calibration-example.png" %>';
 	//var image = context.getImageData(0, 0, video.width, video.height);
 	if (context) { context.drawImage(testPhoto, 0, 0, 320, 240); }
-	/*testPhoto.onload=function() {
-		console.log(testPhoto);
-		if (context) { context.drawImage(testPhoto, 0, 0, 320, 240); }
-	};
-	*/
+	
 	var imageData = context.getImageData(0, 0, video.width, video.height);
+	console.log(imageData);
+	console.log(imageData.data.length);
+	console.log("imageData reduced = ",imageData.data.reduce(add, 0));
 	analyzePhoto(imageData);
 };
 
@@ -111,19 +112,25 @@ function analyzePhoto(imageData) { // Analyze image RGBA data
 		console.log("color= ", colors[i]);
 	}
 	var counter=0;
-	console.log("RGBA= ", RGBA);
-	console.log('RGBA["red"]= ', RGBA["red"]);
+	console.log("Pre-loop RGBA= ", RGBA);
+	console.log("Pre-loop imageData= ", imageData);
 	for (var i = 0; i<imageData.height; i++) {
 		for (var j = 0; j<imageData.width; j++) {
-			for (var color in colors) {
-				RGBA[color][i][j]=imageData.data[counter];
+			for (var k=0; k<colors.length; k++) {
+				//console.log("Pushing RGBA[",colors[k],"][",i,"][",j,"]= imageData.data[",counter,"]");
+				//console.log("imageData.data[",counter,"]= ", imageData.data[counter]);
+				RGBA[colors[k]][i][j]=imageData.data[counter];
+				//console.log("RGBA[",colors[k],"][",i,"][",j,"]= ", RGBA[colors[k]][i][j]);
 				counter++;
 			}
 		}
-		console.log(RGBA);
+		console.log("Post-row", i," RGBA= ", RGBA);
+		console.log("RGBA['intensity'][",i,"] =", RGBA["intensity"][i]);
 		sumIntensity[i]=RGBA["intensity"][i].reduce(add, 0);
+		console.log("Post-row sumIntensity[",i,"] = ", sumIntensity[i]);
 	}
-	console.log(sumIntensity);
+	console.log("Post-loop RGBA= ", RGBA);
+	console.log("Post-loop sumIntensity = ", sumIntensity);
 	updateForm("data", "number");
 }
 
