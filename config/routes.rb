@@ -1,7 +1,7 @@
 Rails.application.routes.draw do
-  root 'scans#new'
+  root 'tags#new'
 
-  resources :scans, only: [:create, :index]
+  resources :tags, only: [:create, :index]
 
   # The priority is based upon order of creation: first created -> highest priority.
   # See how all your routes lay out with "rake routes".

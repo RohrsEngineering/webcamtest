@@ -18,7 +18,7 @@
       <div class="row">
         <canvas id="hexnum" width="320" height="100"></canvas>
       </div>
-      <%= form_for @scan, url: { action: "create" } do |f| %>
+      <%= form_for @tag, url: { action: "create" } do |f| %>
         <%= f.text_field :data, placeholder: "Data" %>
         <%= f.text_field :number, placeholder: "Number" %>
         <%= f.submit "Update Inventory" %>
