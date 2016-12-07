@@ -1,4 +1,5 @@
 class TagsController < ApplicationController
+  before_action :require_user, only: [:index, :show]
   def new
     @tag = Tag.new
   end
